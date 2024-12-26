@@ -8,6 +8,22 @@ class ServerEnvironment:
     DEVELOPMENT = 'Development'
     PRODUCTION = 'Production'
 
+class AiApiSpec(BaseModel):
+    name: str
+    path: str
+
+class AiApiSpecs:
+    openai_compatible_api_v1: AiApiSpec = AiApiSpec(
+        name='openai compatible api v1',
+        path='/openai-compatible-api/v1'
+    )
+
+    classic_agent_api_v1: AiApiSpec = AiApiSpec(
+        name='classic agent api v1',
+        path='/agent'
+    )
+
+
 
 class AiServerConfig(BaseModel):
     consumer: AiServerConsumer

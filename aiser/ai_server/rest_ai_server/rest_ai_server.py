@@ -23,7 +23,7 @@ from aiser.models.dtos import (
 from aiser.models import ChatMessage
 from aiser.knowledge_base import KnowledgeBase
 from aiser.agent import Agent
-from aiser.config import AiServerConfig
+from aiser.config import AiServerConfig, AiApiSpecs
 from aiser.utils import meets_minimum_version
 
 
@@ -115,7 +115,7 @@ class RestAiServer(AiServer):
                 message_dto = ChatMessageDto(textContent=item.text_content)
                 yield AgentChatResponse(outputMessage=message_dto).model_dump_json(by_alias=True) + "\n"
 
-        @authenticated_router.post("/agent/{agent_id}/chat")
+        @authenticated_router.post(AiApiSpecs.classic_agent_api_v1.path + "/{agent_id}/chat")
         async def agent_chat(
                 agent_id: str,
                 request: AgentChatRequest,
