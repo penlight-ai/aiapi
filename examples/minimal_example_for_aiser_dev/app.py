@@ -2,9 +2,11 @@ from typing import List
 import typing
 import os
 import sys
+
 # Add the project root directory to Python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 
+from aiser.agent.agent import TokenUsage
 from aiser import RestAiServer, KnowledgeBase, SemanticSearchResult, Agent
 from aiser.models import ChatMessage
 import asyncio
@@ -23,6 +25,9 @@ class KnowledgeBaseExample(KnowledgeBase):
 
 
 class AgentExample(Agent):
+    def get_latest_reply_token_usage(self) -> typing.Optional[TokenUsage]:
+        return TokenUsage(prompt_tokens=10, completion_tokens=20)
+    
     async def reply(self, messages: typing.List[ChatMessage]) -> typing.AsyncGenerator[ChatMessage, None]:
         reply_message = "This is an example of a reply from an agent"
         for character in reply_message:
@@ -34,7 +39,8 @@ if __name__ == '__main__':
     server = RestAiServer(
         agents=[
             AgentExample(
-                agent_id='10209b93-2dd0-47a0-8eb2-33fb018a783b'  # replace with your agent id
+                agent_id='anthropic/claude-3.5-sonnet:beta'  # replace with your agent id
+
             ),
         ],
         knowledge_bases=[

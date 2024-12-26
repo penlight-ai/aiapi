@@ -2,14 +2,16 @@ import json
 import time
 from typing import List, AsyncGenerator
 
-from aiser.agent import Agent
+from aiser.agent import Agent, TokenUsage
 from aiser.models import ChatMessage
 from .models import (
     ChatMessage as OpenAIChatMessage,
     ChatCompletionResponse,
     ChatCompletionResponseChoice,
     ChatCompletionStreamResponseChoice,
+    ContentItem,
     DeltaMessage,
+    UsageInfo,
 )
 
 
@@ -19,7 +21,18 @@ class ChatService:
 
     def _convert_to_internal_messages(self, messages: List[OpenAIChatMessage]) -> List[ChatMessage]:
         """Convert OpenAI messages to internal ChatMessage format."""
-        return [ChatMessage(text_content=msg.content) for msg in messages]
+        # todo handle case where content is a list of ContentItem
+        # return [ChatMessage(text_content=msg.content) for msg in messages]
+        msgs = []
+        for msg in messages:
+            new_msg = ChatMessage(text_content='')
+            if isinstance(msg.content, list):
+                new_msg.text_content = '\n\n'.join([item.text for item in msg.content])
+            elif isinstance(msg.content, str):
+                new_msg.text_content = msg.content
+            msgs.append(new_msg)
+        return msgs
+
 
     async def create_chat_completion(
         self, messages: List[OpenAIChatMessage], model: str
@@ -65,12 +78,34 @@ class ChatService:
                 finish_reason=None,
             )
 
-        # Final chunk
+        # Final chunk with finish reason
         yield self._create_stream_chunk(
             model=model,
             delta=DeltaMessage(),
             finish_reason="stop",
         )
+        
+        # Get token usage from the latest reply if available
+        token_usage = self._agent.get_latest_reply_token_usage()
+        usage = UsageInfo(
+            prompt_tokens=token_usage.prompt_tokens if token_usage else 0,
+            completion_tokens=token_usage.completion_tokens if token_usage else 0,
+            total_tokens=token_usage.total_tokens if token_usage else 0
+        )
+        
+        # Usage info chunk - including a choice with empty content
+        response = ChatCompletionResponse(
+            model=model,
+            choices=[
+                ChatCompletionStreamResponseChoice(
+                    index=0,
+                    delta=DeltaMessage(role="assistant", content=""),
+                    finish_reason=None
+                )
+            ],
+            usage=usage
+        )
+        yield f"data: {json.dumps(response.model_dump(exclude_none=True))}\n\n"
 
     def _create_stream_chunk(
         self, model: str, delta: DeltaMessage, finish_reason: str | None

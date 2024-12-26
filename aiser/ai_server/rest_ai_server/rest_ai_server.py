@@ -1,10 +1,13 @@
 import time
 import typing
+import logging
 from typing import Dict
 
 import uvicorn
 from fastapi import FastAPI, HTTPException, Depends, APIRouter, Request, status
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, JSONResponse
+from fastapi.encoders import jsonable_encoder
+from fastapi.exceptions import RequestValidationError
 from .openai_compatible_api import ChatCompletionRequest, ChatService
 from aiser.ai_server.ai_server import AiServer
 from aiser.ai_server.authentication import (
@@ -27,6 +30,16 @@ from aiser.knowledge_base import KnowledgeBase
 from aiser.agent import Agent
 from aiser.config import AiServerConfig, AiApiSpecs
 from aiser.utils import meets_minimum_version
+
+# Configure logging
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
 
 
 class RestAiServer(AiServer):
@@ -80,7 +93,7 @@ class RestAiServer(AiServer):
                     min_version=min_version
             ):
                 error_message = f"Minimum version required: {min_version}. Current version: {self.get_aiser_version()}"
-                print(error_message)
+                logger.error(error_message)
                 raise HTTPException(
                     status_code=status.HTTP_426_UPGRADE_REQUIRED,
                     detail=error_message
@@ -139,18 +152,42 @@ class RestAiServer(AiServer):
                     )
             raise HTTPException(status_code=404, detail="Agent not found")
 
-
         @authenticated_router.post(AiApiSpecs.openai_compatible_api_v1.path + "/chat/completions")
-        async def create_chat_completion(request: ChatCompletionRequest):
+        async def openai_compatible_chat_completion(request: ChatCompletionRequest, raw_request: Request):
             """
             OpenAI-compatible chat completions endpoint supporting both streaming and non-streaming modes.
             Uses the existing agent abstraction under the hood.
             """
-            # Extract agent ID from model field (assuming model field contains agent ID)
-            agent_id = request.model
+            # Log request details for debugging
+            logger.debug("=== OpenAI Compatible API Request Debug Info ===")
+            logger.debug(f"Method: {raw_request.method}")
+            logger.debug(f"URL: {raw_request.url}")
             
-            if agent_id not in self._chat_services:
-                raise HTTPException(status_code=404, detail="Agent not found")
+            logger.debug("Headers:")
+            for name, value in raw_request.headers.items():
+                logger.debug(f"{name}: {value}")
+            
+            logger.debug("Request Body:")
+            logger.debug(f"Model: {request.model}")
+            logger.debug(f"Stream: {request.stream}")
+            
+            logger.debug("Messages:")
+            for msg in request.messages:
+                logger.debug(f"Role: {msg.role}")
+                logger.debug(f"Content: {msg.content}")
+                logger.debug("---")
+            logger.debug("============================================")
+            
+            try:
+                # Extract agent ID from model field (assuming model field contains agent ID)
+                agent_id = request.model
+                
+                if agent_id not in self._chat_services:
+                    raise HTTPException(status_code=404, detail="Agent not found")
+            except Exception as e:
+                logger.error(f"Validation error in request: {str(e)}")
+                logger.error(f"Full request data: {request.model_dump_json()}")
+                raise
             
             chat_service = self._chat_services[agent_id]
             
@@ -162,7 +199,34 @@ class RestAiServer(AiServer):
 
             return await chat_service.create_chat_completion(request.messages, request.model)
 
-        app = FastAPI()
+        app = FastAPI(debug=True)
+        
+        @app.middleware("http")
+        async def log_requests(request: Request, call_next):
+            logger.info(f"Incoming request: {request.method} {request.url}")
+            # log the request body
+            body = await request.body()
+            logger.info(f"Request body: {await request.body()}")
+            try:
+                response = await call_next(request)
+                return response
+            except Exception as e:
+                logger.error(f"Request failed: {str(e)}")
+                raise
+        
+        @app.exception_handler(RequestValidationError)
+        async def validation_exception_handler(request: Request, exc: RequestValidationError):
+            logger.error(f"FastAPI validation error: {str(exc)}")
+            logger.error("Validation error details:")
+            for error in exc.errors():
+                logger.error(f"Location: {error['loc']}")
+                logger.error(f"Message: {error['msg']}")
+                logger.error(f"Type: {error['type']}")
+                logger.error("---")
+            return JSONResponse(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                content=jsonable_encoder({"detail": exc.errors()}),
+            )
         app.include_router(authenticated_router)
         app.include_router(non_authenticated_router)
 
