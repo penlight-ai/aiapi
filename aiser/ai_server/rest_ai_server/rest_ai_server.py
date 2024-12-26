@@ -1,9 +1,11 @@
 import time
 import typing
+from typing import Dict
 
 import uvicorn
 from fastapi import FastAPI, HTTPException, Depends, APIRouter, Request, status
 from fastapi.responses import StreamingResponse
+from .openai_compatible_api import ChatCompletionRequest, ChatService
 from aiser.ai_server.ai_server import AiServer
 from aiser.ai_server.authentication import (
     AsymmetricJwtRestAuthenticator,
@@ -39,6 +41,7 @@ class RestAiServer(AiServer):
             config: typing.Optional[AiServerConfig] = None,
             authenticator: typing.Optional[RestAuthenticator] = None
     ):
+        self._chat_services: Dict[str, ChatService] = {}
         super().__init__(
             complete_url=complete_url,
             knowledge_bases=knowledge_bases,
@@ -47,6 +50,11 @@ class RestAiServer(AiServer):
             port=port,
             config=config
         )
+        
+        # Initialize chat services for each agent
+        if agents:
+            for agent in agents:
+                self._chat_services[agent.get_id()] = ChatService(agent)
         self._workers = workers
         self._authenticator = authenticator or self._determine_authenticator_fallback()
 
@@ -130,6 +138,29 @@ class RestAiServer(AiServer):
                         media_type="text/event-stream"
                     )
             raise HTTPException(status_code=404, detail="Agent not found")
+
+
+        @authenticated_router.post(AiApiSpecs.openai_compatible_api_v1.path + "/chat/completions")
+        async def create_chat_completion(request: ChatCompletionRequest):
+            """
+            OpenAI-compatible chat completions endpoint supporting both streaming and non-streaming modes.
+            Uses the existing agent abstraction under the hood.
+            """
+            # Extract agent ID from model field (assuming model field contains agent ID)
+            agent_id = request.model
+            
+            if agent_id not in self._chat_services:
+                raise HTTPException(status_code=404, detail="Agent not found")
+            
+            chat_service = self._chat_services[agent_id]
+            
+            if request.stream:
+                return StreamingResponse(
+                    chat_service.generate_stream(request.messages, request.model),
+                    media_type="text/event-stream",
+                )
+
+            return await chat_service.create_chat_completion(request.messages, request.model)
 
         app = FastAPI()
         app.include_router(authenticated_router)
