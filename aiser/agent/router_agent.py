@@ -1,7 +1,6 @@
 from aiser.agent import Agent, TokenUsage
 from aiser.models import ChatMessage
 import typing
-import aiser
 import re
 
 
