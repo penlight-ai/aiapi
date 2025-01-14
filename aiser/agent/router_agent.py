@@ -7,7 +7,7 @@ import re
 class RouterAgent(ServerAgent):
     token_usage_for_last_reply: typing.Optional[TokenUsage] = None
 
-    def __init__(self, agents: typing.List[ServerAgent]):
+    def __init__(self, agents: typing.Sequence[ServerAgent]):
         super().__init__(agent_id="router_agent")
         self.agents = agents
         self.current_agent_index = 0
@@ -17,7 +17,7 @@ class RouterAgent(ServerAgent):
         return agent.get_latest_reply_token_usage()
 
     async def reply(
-        self, messages: typing.List[ChatMessage]
+        self, messages: typing.Sequence[ChatMessage]
     ) -> typing.AsyncGenerator[ChatMessage, None]:
         self.infer_agent_idx_from_latest_message_if_appropriate(
             message_content=messages[-1].text_content
