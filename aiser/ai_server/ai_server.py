@@ -2,14 +2,14 @@ from abc import ABC, abstractmethod
 from typing import List, Optional
 
 from ..knowledge_base import KnowledgeBase
-from ..agent import Agent
+from ..agent import ServerAgent
 from ..config import AiServerConfig, make_ai_server_config
 from ..version import __version__
 
 
 class AiServer(ABC):
     _knowledge_bases: List[KnowledgeBase]
-    _agents: List[Agent]
+    _agents: List[ServerAgent]
     _port: int
 
     def __init__(
@@ -18,7 +18,7 @@ class AiServer(ABC):
             port: int,
             complete_url: Optional[bool],
             knowledge_bases: Optional[List[KnowledgeBase]] = None,
-            agents: Optional[List[Agent]] = None,
+            agents: Optional[List[ServerAgent]] = None,
             config: Optional[AiServerConfig] = None
     ):
         super().__init__()

@@ -7,7 +7,7 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 
 from aiser.agent.agent import TokenUsage
-from aiser import RestAiServer, KnowledgeBase, SemanticSearchResult, Agent
+from aiser import RestAiServer, KnowledgeBase, SemanticSearchResult, ServerAgent
 from aiser.models import ChatMessage
 import asyncio
 from dotenv import load_dotenv
@@ -24,7 +24,7 @@ class KnowledgeBaseExample(KnowledgeBase):
         return [result_example for _ in range(desired_number_of_results)]
 
 
-class AgentExample(Agent):
+class AgentExample(ServerAgent):
     def get_latest_reply_token_usage(self) -> typing.Optional[TokenUsage]:
         return TokenUsage(prompt_tokens=10, completion_tokens=20)
     

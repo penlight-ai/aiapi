@@ -1,6 +1,6 @@
 from typing import List
 import typing
-from aiser import RestAiServer, KnowledgeBase, SemanticSearchResult, Agent
+from aiser import RestAiServer, KnowledgeBase, SemanticSearchResult, ServerAgent
 from aiser.models import ChatMessage
 import asyncio
 
@@ -14,7 +14,7 @@ class KnowledgeBaseExample(KnowledgeBase):
         return [result_example for _ in range(desired_number_of_results)]
 
 
-class AgentExample(Agent):
+class AgentExample(ServerAgent):
     async def reply(self, messages: typing.List[ChatMessage]) -> typing.AsyncGenerator[ChatMessage, None]:
         reply_message = "This is an example of a reply from an agent"
         for character in reply_message:

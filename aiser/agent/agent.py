@@ -16,7 +16,7 @@ class TokenUsage:
         return self.prompt_tokens + self.completion_tokens
 
 
-class Agent(IdentifiableEntity, ABC):
+class ServerAgent(IdentifiableEntity, ABC):
     def __init__(self, agent_id: str):
         super().__init__(entity_id=agent_id)
 

@@ -4,7 +4,7 @@ import asyncio
 from langchain.chat_models import ChatOpenAI
 from langchain.callbacks.base import BaseCallbackHandler
 from langchain.schema import HumanMessage
-from aiser import RestAiServer, Agent
+from aiser import RestAiServer, ServerAgent
 from aiser.models import ChatMessage
 
 
@@ -27,7 +27,7 @@ class CustomCallbackHandler(BaseCallbackHandler):
             await asyncio.sleep(0.05)
 
 
-class PromptBasedAgent(Agent):
+class PromptBasedAgent(ServerAgent):
     def __init__(
             self,
             agent_id: str,

@@ -2,7 +2,7 @@ import json
 import time
 from typing import List, AsyncGenerator
 
-from aiser.agent import Agent, TokenUsage
+from aiser.agent import ServerAgent, TokenUsage
 from aiser.models import ChatMessage
 from .models import (
     ChatMessage as OpenAIChatMessage,
@@ -16,7 +16,7 @@ from .models import (
 
 
 class ChatService:
-    def __init__(self, agent: Agent):
+    def __init__(self, agent: ServerAgent):
         self._agent = agent
 
     def _convert_to_internal_messages(self, messages: List[OpenAIChatMessage]) -> List[ChatMessage]:

@@ -1,13 +1,13 @@
-from aiser.agent import Agent, TokenUsage
+from aiser.agent import ServerAgent, TokenUsage
 from aiser.models import ChatMessage
 import typing
 import re
 
 
-class RouterAgent(Agent):
+class RouterAgent(ServerAgent):
     token_usage_for_last_reply: typing.Optional[TokenUsage] = None
 
-    def __init__(self, agents: typing.List[Agent]):
+    def __init__(self, agents: typing.List[ServerAgent]):
         super().__init__(agent_id="router_agent")
         self.agents = agents
         self.current_agent_index = 0

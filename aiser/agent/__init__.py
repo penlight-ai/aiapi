@@ -1,1 +1,1 @@
-from .agent import Agent, TokenUsage
+from .agent import ServerAgent, TokenUsage

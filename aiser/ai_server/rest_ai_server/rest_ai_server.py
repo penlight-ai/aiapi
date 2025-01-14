@@ -27,7 +27,7 @@ from aiser.models.dtos import (
 )
 from aiser.models import ChatMessage
 from aiser.knowledge_base import KnowledgeBase
-from aiser.agent import Agent
+from aiser.agent import ServerAgent
 from aiser.config import AiServerConfig, AiApiSpecs
 from aiser.utils import meets_minimum_version
 
@@ -47,7 +47,7 @@ class RestAiServer(AiServer):
             self,
             complete_url: typing.Optional[str] = None,
             knowledge_bases: typing.Optional[typing.List[KnowledgeBase]] = None,
-            agents: typing.Optional[typing.List[Agent]] = None,
+            agents: typing.Optional[typing.List[ServerAgent]] = None,
             host: str = "127.0.0.1",
             port: int = 5000,
             workers: typing.Optional[int] = None,
