@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List, Optional
+from typing import List, Optional, Sequence
 
 from ..knowledge_base import KnowledgeBase
 from ..agent import ServerAgent
@@ -16,16 +16,16 @@ class AiServer(ABC):
             self,
             host: str,
             port: int,
-            complete_url: Optional[bool],
+            complete_url: Optional[str],
             knowledge_bases: Optional[List[KnowledgeBase]] = None,
-            agents: Optional[List[ServerAgent]] = None,
+            agents: Optional[Sequence[ServerAgent]] = None,
             config: Optional[AiServerConfig] = None
     ):
         super().__init__()
         self._port = port
         self._host = host
         self._knowledge_bases = [] if knowledge_bases is None else knowledge_bases
-        self._agents = [] if agents is None else agents
+        self._agents = [] if agents is None else list(agents)
         self._config: AiServerConfig = config or make_ai_server_config(
             complete_url=complete_url
         )
@@ -39,11 +39,11 @@ class AiServer(ABC):
 
     def _get_list_of_identifiable_entity_ids(self) -> List[str]:
         agent_ids = [
-            agent.get_id()
+            agent.get_id_or_raise()
             for agent in self._agents
         ]
         knowledge_base_ids = [
-            knowledge_base.get_id()
+            knowledge_base.get_id_or_raise()
             for knowledge_base in self._knowledge_bases
         ]
         return agent_ids + knowledge_base_ids

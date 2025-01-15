@@ -2,6 +2,7 @@ import time
 import typing
 import logging
 from typing import Dict
+import typing as t
 
 import uvicorn
 from fastapi import FastAPI, HTTPException, Depends, APIRouter, Request, status
@@ -45,12 +46,12 @@ logger = logging.getLogger(__name__)
 class RestAiServer(AiServer):
     def __init__(
             self,
-            complete_url: typing.Optional[str] = None,
-            knowledge_bases: typing.Optional[typing.List[KnowledgeBase]] = None,
-            agents: typing.Optional[typing.List[ServerAgent]] = None,
+            complete_url: t.Optional[str] = None,
+            knowledge_bases: t.Optional[t.List[KnowledgeBase]] = None,
+            agents: t.Optional[t.Sequence[ServerAgent]] = None,
             host: str = "127.0.0.1",
             port: int = 5000,
-            workers: typing.Optional[int] = None,
+            workers: t.Optional[int] = None,
             config: typing.Optional[AiServerConfig] = None,
             authenticator: typing.Optional[RestAuthenticator] = None
     ):
@@ -67,7 +68,7 @@ class RestAiServer(AiServer):
         # Initialize chat services for each agent
         if agents:
             for agent in agents:
-                self._chat_services[agent.get_id()] = ChatService(agent)
+                self._chat_services[agent.get_id_or_raise()] = ChatService(agent)
         self._workers = workers
         self._authenticator = authenticator or self._determine_authenticator_fallback()
 
@@ -124,7 +125,7 @@ class RestAiServer(AiServer):
                         desired_number_of_results=request.numResults
                     )
                     result_dto = SemanticSearchResultResponseDto(results=[
-                        SemanticSearchResultDto(content=result.content, score=result.score)
+                        SemanticSearchResultDto(content=result.content, score=result.score or 0)
                         for result in results
                     ])
                     return result_dto

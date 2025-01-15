@@ -12,3 +12,8 @@ class IdentifiableEntity:
     def get_id(self) -> typing.Optional[str]:
         return self._id
 
+    def get_id_or_raise(self) -> str:
+        if not self._id:
+            raise ValueError("Entity ID is not set")
+        return self._id
+
